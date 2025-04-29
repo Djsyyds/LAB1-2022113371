@@ -1,0 +1,354 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <map>
+#include <unordered_map>
+#include <queue>
+#include <algorithm>
+#include <random>
+#include <cmath>
+#include <chrono>
+#include <thread>
+#include <stack>
+#include <set>
+#include <iomanip>
+#include <climits>
+
+using namespace std;
+
+class Graph {
+private:
+    unordered_map<string, unordered_map<string, int>> adjList;
+    unordered_map<string, double> pageRank;
+    unordered_map<string, unordered_map<string, vector<string>>> bridgeCache;
+
+public:
+    void addEdge(const string& src, const string& dest) {
+        adjList[src][dest]++;
+    }
+
+    const unordered_map<string, unordered_map<string, int>>& getAdjList() const {
+        return adjList;
+    }
+
+    vector<string> getBridgeWords(const string& word1, const string& word2) {
+        if (!adjList.count(word1)) return {"No word1"};
+        if (!adjList.count(word2)) return {"No word2"};
+        
+        vector<string> bridges;
+        for (auto& [mid, _] : adjList[word1]) {
+            if (adjList[mid].count(word2)) {
+                bridges.push_back(mid);
+            }
+        }
+        return bridges;
+    }
+
+    vector<string> shortestPath(const string& src, const string& dest) {
+        priority_queue<pair<int, string>, vector<pair<int, string>>, greater<>> pq;
+        unordered_map<string, int> dist;
+        unordered_map<string, string> prev;
+
+        for (auto& [node, _] : adjList) dist[node] = INT_MAX;
+        dist[src] = 0;
+        pq.emplace(0, src);
+
+        while (!pq.empty()) {
+            auto [d, u] = pq.top(); pq.pop();
+            if (u == dest) break;
+            for (auto& [v, w] : adjList[u]) {
+                if (dist[v] > dist[u] + w) {
+                    dist[v] = dist[u] + w;
+                    prev[v] = u;
+                    pq.emplace(dist[v], v);
+                }
+            }
+        }
+
+        vector<string> path;
+        if (dist[dest] == INT_MAX) return path;
+        for (string cur = dest; cur != src; cur = prev[cur]) {
+            path.push_back(cur);
+        }
+        path.push_back(src);
+        reverse(path.begin(), path.end());
+        return path;
+    }
+
+    void calculatePageRank(double damping = 0.85, int iterations = 100) {
+        unordered_map<string, double> pr;
+        const double N = adjList.size();
+        for (auto& [node, _] : adjList) pr[node] = 1.0 / N;
+
+        for (int i = 0; i < iterations; ++i) {
+            unordered_map<string, double> newPR;
+            double danglingSum = 0.0;
+
+            for (auto& [node, edges] : adjList) {
+                if (edges.empty()) danglingSum += pr[node];
+            }
+
+            for (auto& [node, _] : adjList) {
+                double sum = 0.0;
+                for (auto& [inNode, edges] : adjList) {
+                    if (edges.count(node)) {
+                        sum += pr[inNode] / edges.size();
+                    }
+                }
+                newPR[node] = (1 - damping) / N + damping * (sum + danglingSum / N);
+            }
+            pr = newPR;
+        }
+        pageRank = pr;
+    }
+
+    double getPageRank(const string& word) {
+        return pageRank.count(word) ? pageRank[word] : 0.0;
+    }
+
+    string randomWalk() {
+        if (adjList.empty()) return "";
+        vector<string> nodes;
+        for (auto& [node, _] : adjList) nodes.push_back(node);
+        static random_device rd;
+        static mt19937 gen(rd());
+        uniform_int_distribution<> dis(0, nodes.size()-1);
+        
+        string current = nodes[dis(gen)];
+        set<pair<string, string>> visitedEdges;
+        vector<string> path;
+        path.push_back(current);
+
+        while (true) {
+            auto& edges = adjList[current];
+            if (edges.empty()) break;
+            
+            vector<string> targets;
+            for (auto& [t, _] : edges) targets.push_back(t);
+            uniform_int_distribution<> edgeDis(0, targets.size()-1);
+            string next = targets[edgeDis(gen)];
+            
+            if (visitedEdges.count({current, next})) break;
+            visitedEdges.insert({current, next});
+            current = next;
+            path.push_back(current);
+        }
+
+        stringstream ss;
+        for (auto& word : path) ss << word << " ";
+        return ss.str();
+    }
+};
+
+class TextProcessor {
+public:
+    static vector<string> processText(const string& filename) {
+        ifstream file(filename);
+        string text;
+        string line;
+        while (getline(file, line)) {
+            text += line + " ";
+        }
+
+        string processed;
+        for (char c : text) {
+            if (isalpha(c)) processed += tolower(c);
+            else processed += ' ';
+        }
+
+        stringstream ss(processed);
+        vector<string> words;
+        string word;
+        while (ss >> word) {
+            words.push_back(word);
+        }
+        return words;
+    }
+};
+
+void exportToDot(const Graph& graph, const string& filename = "graph.dot") {
+    ofstream dotFile(filename);
+    dotFile << "digraph G {\n";
+    dotFile << "  rankdir=LR;\n";  // 设置从左到右的布局
+
+    const auto& adjList = graph.getAdjList();
+    for (const auto& [src, edges] : adjList) {
+        for (const auto& [dest, weight] : edges) {
+            dotFile << "  \"" << src << "\" -> \"" << dest 
+                    << "\" [label=\"" << weight << "\"];\n";
+        }
+    }
+    dotFile << "}\n";
+    dotFile.close();
+}
+
+// 更新showDirectedGraph函数，添加导出选项
+void showDirectedGraph(const Graph& graph, bool exportImage = false) {
+    // 原有命令行展示逻辑
+    const auto& adjList = graph.getAdjList();
+    cout << "Directed Graph:\n";
+    for (const auto& [src, edges] : adjList) {
+        cout << src << " -> ";
+        for (const auto& [dest, weight] : edges) {
+            cout << dest << "(" << weight << ") ";
+        }
+        cout << "\n";
+    }
+
+    // 导出为图像文件（可选功能）
+    if (exportImage) {
+        exportToDot(graph);
+        (void)system("dot -Tpng graph.dot -o graph.png");
+        cout << "\nGraph image saved to graph.png\n";
+    }
+}
+
+string queryBridgeWords(Graph& graph, const string& word1, const string& word2) {
+    auto bridges = graph.getBridgeWords(word1, word2);
+    if (bridges.empty()) return "No bridge words from " + word1 + " to " + word2 + "!";
+    
+    stringstream ss;
+    ss << "The bridge words from " << word1 << " to " << word2 << " are: ";
+    for (size_t i = 0; i < bridges.size(); ++i) {
+        if (i == bridges.size()-1) ss << "and " << bridges[i] << ".";
+        else if (i == bridges.size()-2) ss << bridges[i] << " ";
+        else ss << bridges[i] << ", ";
+    }
+    return ss.str();
+}
+
+string generateNewText(Graph& graph, const string& input) {
+    vector<string> words;
+    stringstream ss(input);
+    string word;
+    while (ss >> word) {
+        transform(word.begin(), word.end(), word.begin(), ::tolower);
+        words.push_back(word);
+    }
+
+    vector<string> newText;
+    random_device rd;
+    mt19937 gen(rd());
+    
+    for (size_t i = 0; i < words.size(); ++i) {
+        newText.push_back(words[i]);
+        if (i < words.size() - 1) {
+            auto bridges = graph.getBridgeWords(words[i], words[i+1]);
+            // 只有在找到有效的桥接词时才添加
+            if (!bridges.empty() && bridges[0] != "No word1" && bridges[0] != "No word2") {
+                uniform_int_distribution<> dis(0, bridges.size()-1);
+                newText.push_back(bridges[dis(gen)]);
+            }
+        }
+    }
+
+    stringstream result;
+    for (size_t i = 0; i < newText.size(); ++i) {
+        if (i > 0) result << " ";
+        result << newText[i];
+    }
+    return result.str();
+}
+
+string calcShortestPath(Graph& graph, const string& word1, const string& word2) {
+    auto path = graph.shortestPath(word1, word2);
+    if (path.empty()) return "No path from " + word1 + " to " + word2 + "!";
+    
+    stringstream ss;
+    ss << "Shortest path: ";
+    for (size_t i = 0; i < path.size(); ++i) {
+        if (i > 0) ss << " -> ";
+        ss << path[i];
+    }
+    return ss.str();
+}
+
+double calcPageRank(Graph& graph, const string& word) {
+    return graph.getPageRank(word);
+}
+
+string randomWalk(Graph& graph) {
+    return graph.randomWalk();
+}
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " <filename>\n";
+        return 1;
+    }
+
+    auto words = TextProcessor::processText(argv[1]);
+    Graph graph;
+    for (size_t i = 0; i < words.size()-1; ++i) {
+        graph.addEdge(words[i], words[i+1]);
+    }
+
+    graph.calculatePageRank();
+
+    while (true) {
+        cout << "\nOptions:\n"
+             << "1. Show directed graph\n"
+             << "2. Export graph to image (PNG)\n"
+             << "3. Query bridge words\n"
+             << "4. Generate new text\n"
+             << "5. Calculate shortest path\n"
+             << "6. Calculate PageRank\n"
+             << "7. Random walk\n"
+             << "8. Exit\n"
+             << "Choice: ";
+
+        int choice;
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+            case 1:
+                showDirectedGraph(graph);
+                break;
+            case 2:
+                showDirectedGraph(graph, true);  // 导出为图像
+                break;
+            case 3: {
+                string word1, word2;
+                cout << "Enter two words: ";
+                cin >> word1 >> word2;
+                transform(word1.begin(), word1.end(), word1.begin(), ::tolower);
+                transform(word2.begin(), word2.end(), word2.begin(), ::tolower);
+                cout << queryBridgeWords(graph, word1, word2) << endl;
+                break;
+            }
+            case 4: {
+                string input;
+                cout << "Enter text: ";
+                getline(cin, input);
+                cout << generateNewText(graph, input) << endl;
+                break;
+            }
+            case 5: {
+                string word1, word2;
+                cout << "Enter two words: ";
+                cin >> word1 >> word2;
+                transform(word1.begin(), word1.end(), word1.begin(), ::tolower);
+                transform(word2.begin(), word2.end(), word2.begin(), ::tolower);
+                cout << calcShortestPath(graph, word1, word2) << endl;
+                break;
+            }
+            case 6: {
+                string word;
+                cout << "Enter word: ";
+                cin >> word;
+                transform(word.begin(), word.end(), word.begin(), ::tolower);
+                cout << "PageRank: " << fixed << setprecision(4) << calcPageRank(graph, word) << endl;
+                break;
+            }
+            case 7:
+                cout << "Random walk: " << randomWalk(graph) << endl;
+                break;
+            case 8:
+                return 0;
+            default:
+                cout << "Invalid choice\n";
+        }
+    }
+}
