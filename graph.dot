@@ -1,0 +1,15 @@
+digraph G {
+  rankdir=LR;
+  "and" -> "new" [label="1"];
+  "out" -> "new" [label="1"];
+  "seek" -> "out" [color=red, penwidth=2.0, label="1"];
+  "worlds" -> "to" [label="1"];
+  "life" -> "and" [label="1"];
+  "new" -> "civilizations" [label="1"];
+  "new" -> "life" [label="1"];
+  "new" -> "worlds" [label="1"];
+  "strange" -> "new" [label="1"];
+  "explore" -> "strange" [label="1"];
+  "to" -> "seek" [color=red, penwidth=2.0, label="1"];
+  "to" -> "explore" [label="1"];
+}
