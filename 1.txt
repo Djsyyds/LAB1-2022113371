@@ -350,6 +350,7 @@ int main(int argc, char* argv[]) {
             default:
                 cout << "Invalid choice\n";
                 printf("111");
+                printf("222");
         }
     }
 }
