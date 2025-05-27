@@ -29,13 +29,13 @@ public:
         adjList[src][dest]++;
     }
 
-    const unordered_map<string, unordered_map<string, int>>& getAdjList() const {
+    auto getAdjList() const -> const unordered_map<string, unordered_map<string, int>>& {
         return adjList;
     }
 
-    vector<string> getBridgeWords(const string& word1, const string& word2) {
-        bool word1Exists = adjList.count(word1);
-        bool word2Exists = adjList.count(word2);
+    auto getBridgeWords(const string& word1, const string& word2) -> vector<string> {
+        bool word1Exists = adjList.count(word1) != 0u;
+        bool word2Exists = adjList.count(word2) != 0u;
         
         // 检查单词是否在图中，并给出具体的错误信息
         if (!word1Exists || !word2Exists) {
@@ -52,7 +52,7 @@ public:
         
         vector<string> bridges;
         for (auto& [mid, _] : adjList[word1]) {
-            if (adjList[mid].count(word2)) {
+            if (adjList[mid].count(word2) != 0u) {
                 bridges.push_back(mid);
             }
         }
@@ -65,18 +65,22 @@ public:
         return bridges;
     }
 
-    vector<string> shortestPath(const string& src, const string& dest) {
+    auto shortestPath(const string& src, const string& dest) -> vector<string> {
         priority_queue<pair<int, string>, vector<pair<int, string>>, greater<>> pq;
         unordered_map<string, int> dist;
         unordered_map<string, string> prev;
 
-        for (auto& [node, _] : adjList) dist[node] = INT_MAX;
+    for (const auto& entry : adjList) {  // 放弃结构化绑定
+        const auto& node = entry.first;  // 明确初始化变量
+        dist[node] = INT_MAX;
+    }
         dist[src] = 0;
         pq.emplace(0, src);
 
         while (!pq.empty()) {
             auto [d, u] = pq.top(); pq.pop();
-            if (u == dest) break;
+            if (u == dest) { break;
+}
             for (auto& [v, w] : adjList[u]) {
                 if (dist[v] > dist[u] + w) {
                     dist[v] = dist[u] + w;
@@ -87,7 +91,8 @@ public:
         }
 
         vector<string> path;
-        if (dist[dest] == INT_MAX) return path;
+        if (dist[dest] == INT_MAX) { return path;
+}
         for (string cur = dest; cur != src; cur = prev[cur]) {
             path.push_back(cur);
         }
@@ -130,11 +135,15 @@ public:
             for (const auto& node : allNodes) {
                 double sumIn = 0.0;
                 // 遍历所有可能的入边来源节点
-                for (const auto& [src, edges] : adjList) {
-                    if (edges.count(node)) { // 如果 src 指向当前节点
+                for (const auto& entry : adjList) {
+                    const auto& src = entry.first;    // 显式初始化
+                    const auto& edges = entry.second; // 显式初始化
+                    // 使用 src 和 edges
+                    if (edges.count(node) != 0u) { // 如果 src 指向当前节点
                         sumIn += pr[src] / edges.size(); // 贡献为 PR(src)/出度
                     }
                 }
+
                 // 计算新PR值（包含阻尼因子和悬挂节点均分）
                 newPr[node] = (1.0 - damping) / N + damping * (sumIn + danglingSum / N);
             }
@@ -149,14 +158,16 @@ public:
         }
     }
 
-    double getPageRank(const string& word) {
-        return pageRank.count(word) ? pageRank[word] : 0.0;
+    auto getPageRank(const string& word) -> double {
+        return pageRank.count(word) != 0u ? pageRank[word] : 0.0;
     }
 
-    string randomWalk() {
-        if (adjList.empty()) return "";
+    auto randomWalk() -> string {
+        if (adjList.empty()) { return "";
+}
         vector<string> nodes;
-        for (auto& [node, _] : adjList) nodes.push_back(node);
+        for (auto& [node, _] : adjList) { nodes.push_back(node);
+}
         static random_device rd;
         static mt19937 gen(rd());
         uniform_int_distribution<> dis(0, nodes.size()-1);
@@ -168,21 +179,25 @@ public:
 
         while (true) {
             auto& edges = adjList[current];
-            if (edges.empty()) break;
+            if (edges.empty()) { break;
+}
             
             vector<string> targets;
-            for (auto& [t, _] : edges) targets.push_back(t);
+            for (auto& [t, _] : edges) { targets.push_back(t);
+}
             uniform_int_distribution<> edgeDis(0, targets.size()-1);
             string next = targets[edgeDis(gen)];
             
-            if (visitedEdges.count({current, next})) break;
+            if (visitedEdges.count({current, next}) != 0u) { break;
+}
             visitedEdges.insert({current, next});
             current = next;
             path.push_back(current);
         }
 
         stringstream ss;
-        for (auto& word : path) ss << word << " ";
+        for (auto& word : path) { ss << word << " ";
+}
         
         // 将结果保存到文件
         ofstream outFile("random_walk.txt");
@@ -197,7 +212,7 @@ public:
 
 class TextProcessor {
 public:
-    static vector<string> processText(const string& filename) {
+    static auto processText(const string& filename) -> vector<string> {
         ifstream file(filename);
         string text;
         string line;
@@ -207,8 +222,9 @@ public:
 
         string processed;
         for (char c : text) {
-            if (isalpha(c)) processed += tolower(c);
-            else processed += ' ';
+            if (isalpha(c) != 0) { processed += tolower(c);
+            } else { processed += ' ';
+}
         }
 
         stringstream ss(processed);
@@ -229,7 +245,8 @@ void exportToDot(const Graph& graph, const string& filename = "graph.dot",
 
     // 创建用于检查边是否在最短路径上的辅助函数
     auto isEdgeInPath = [&](const string& src, const string& dest) {
-        if (highlightPath.empty()) return false;
+        if (highlightPath.empty()) { return false;
+}
         for (size_t i = 0; i < highlightPath.size() - 1; ++i) {
             if (highlightPath[i] == src && highlightPath[i + 1] == dest) {
                 return true;
@@ -258,13 +275,21 @@ void showDirectedGraph(const Graph& graph, bool exportImage = false) {
     // 原有命令行展示逻辑
     const auto& adjList = graph.getAdjList();
     cout << "Directed Graph:\n";
-    for (const auto& [src, edges] : adjList) {
+    for (const auto& entry : adjList) {
+        const auto& src = entry.first;
+        const auto& edges = entry.second;
+        // ...
         cout << src << " -> ";
-        for (const auto& [dest, weight] : edges) {
+        for (const auto& edge : edges) {
+            const auto& dest = edge.first;
+            const auto& weight = edge.second;
+            // ...
             cout << dest << "(" << weight << ") ";
         }
+
         cout << "\n";
     }
+
 
     // 导出为图像文件（可选功能）
     if (exportImage) {
@@ -274,7 +299,7 @@ void showDirectedGraph(const Graph& graph, bool exportImage = false) {
     }
 }
 
-string queryBridgeWords(Graph& graph, const string& word1, const string& word2) {
+auto queryBridgeWords(Graph& graph, const string& word1, const string& word2) -> string {
     auto bridges = graph.getBridgeWords(word1, word2);
     
     // 如果是错误消息，直接返回
@@ -297,7 +322,7 @@ string queryBridgeWords(Graph& graph, const string& word1, const string& word2) 
     return ss.str();
 }
 
-string generateNewText(Graph& graph, const string& input) {
+auto generateNewText(Graph& graph, const string& input) -> string {
     vector<string> words;
     stringstream ss(input);
     string word;
@@ -324,15 +349,17 @@ string generateNewText(Graph& graph, const string& input) {
 
     stringstream result;
     for (size_t i = 0; i < newText.size(); ++i) {
-        if (i > 0) result << " ";
+        if (i > 0) { result << " ";
+}
         result << newText[i];
     }
     return result.str();
 }
 
-string calcShortestPath(Graph& graph, const string& word1, const string& word2) {
+auto calcShortestPath(Graph& graph, const string& word1, const string& word2) -> string {
     auto path = graph.shortestPath(word1, word2);
-    if (path.empty()) return "No path from " + word1 + " to " + word2 + "!";
+    if (path.empty()) { return "No path from " + word1 + " to " + word2 + "!";
+}
     
     // 导出带有红色标注的路径图
     exportToDot(graph, "graph.dot", path);
@@ -341,7 +368,8 @@ string calcShortestPath(Graph& graph, const string& word1, const string& word2) 
     stringstream ss;
     ss << "Shortest path: ";
     for (size_t i = 0; i < path.size(); ++i) {
-        if (i > 0) ss << " -> ";
+        if (i > 0) { ss << " -> ";
+}
         ss << path[i];
     }
     ss << "\nGraph with highlighted path has been saved to graph.png";
@@ -349,9 +377,9 @@ string calcShortestPath(Graph& graph, const string& word1, const string& word2) 
 }
 
 // 修改计算单源最短路径的函数
-string calcShortestPathToAll(Graph& graph, const string& source) {
+auto calcShortestPathToAll(Graph& graph, const string& source) -> string {
     const auto& adjList = graph.getAdjList();
-    if (!adjList.count(source)) {
+    if (adjList.count(source) == 0u) {
         return "输入的单词 '" + source + "' 不在图中！";
     }
 
@@ -373,13 +401,29 @@ string calcShortestPathToAll(Graph& graph, const string& source) {
             result << "不存在路径";
         } else {
             // 为每个路径生成单独的图片
-            string dotFile = "path_" + source + "_to_" + dest + ".dot";
-            string pngFile = "path_" + source + "_to_" + dest + ".png";
+            std::string dotFile("path_");
+            dotFile.reserve(32);  // 预分配合理空间（按实际需要调整）
+            dotFile.append(source)
+                   .append("_to_")
+                   .append(dest)
+                   .append(".dot");
+            std::string pngFile("path_");
+            pngFile.reserve(32);  // 预分配合理空间
+            pngFile.append(source)
+                   .append("_to_")
+                   .append(dest)
+                   .append(".png"); 
             exportToDot(graph, dotFile, path);
-            system(("dot -Tpng " + dotFile + " -o " + pngFile).c_str());
+            std::string cmd("dot -Tpng ");
+            cmd.reserve(128);  // 预分配合理空间
+            cmd.append(dotFile)
+               .append(" -o ")
+               .append(pngFile);
+            system(cmd.c_str());
             
             for (size_t i = 0; i < path.size(); ++i) {
-                if (i > 0) result << " -> ";
+                if (i > 0) { result << " -> ";
+}
                 result << path[i];
             }
             result << " (查看 " << pngFile << ")";
@@ -389,15 +433,15 @@ string calcShortestPathToAll(Graph& graph, const string& source) {
     return result.str();
 }
 
-double calcPageRank(Graph& graph, const string& word) {
+auto calcPageRank(Graph& graph, const string& word) -> double {
     return graph.getPageRank(word);
 }
 
-string randomWalk(Graph& graph) {
+auto randomWalk(Graph& graph) -> string {
     return graph.randomWalk();
 }
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     if (argc < 2) {
         cerr << "Usage: " << argv[0] << " <filename>\n";
         return 1;
@@ -435,7 +479,8 @@ int main(int argc, char* argv[]) {
                 showDirectedGraph(graph, true);  // 导出为图像
                 break;
             case 3: {
-                string word1, word2;
+                string word1;
+                string word2;
                 cout << "Enter two words: ";
                 cin >> word1 >> word2;
                 transform(word1.begin(), word1.end(), word1.begin(), ::tolower);
@@ -451,7 +496,8 @@ int main(int argc, char* argv[]) {
                 break;
             }
             case 5: {
-                string word1, word2;
+                string word1;
+                string word2;
                 cout << "Enter one or two words: ";
                 cin >> word1;
                 transform(word1.begin(), word1.end(), word1.begin(), ::tolower);
