@@ -1,0 +1,53 @@
+digraph RandomWalkFlowchart {
+    rankdir=TB;
+    node [style=filled];
+    
+    // 开始和结束
+    start [label="开始", shape=ellipse, fillcolor=lightgreen];
+    end [label="结束", shape=ellipse, fillcolor=lightcoral];
+    
+    // 处理节点
+    check_empty [label="adjList为空?", shape=diamond, fillcolor=orange];
+    collect_nodes [label="收集所有节点", shape=box, fillcolor=lightblue];
+    init_vars [label="初始化变量\n选择起始节点", shape=box, fillcolor=lightblue];
+    loop_start [label="开始主循环", shape=box, fillcolor=purple, fontcolor=white];
+    check_edges [label="当前节点\n有出边?", shape=diamond, fillcolor=orange];
+    collect_targets [label="收集目标节点", shape=box, fillcolor=lightblue];
+    select_next [label="随机选择\n下一节点", shape=box, fillcolor=lightblue];
+    check_visited [label="边已访问?", shape=diamond, fillcolor=orange];
+    update_state [label="更新状态\n记录边\n移动到下一节点", shape=box, fillcolor=lightblue];
+    build_result [label="构建结果字符串", shape=box, fillcolor=lightblue];
+    write_file [label="写入文件", shape=box, fillcolor=lightblue];
+    return_empty [label="返回空字符串", shape=box, fillcolor=pink];
+    return_result [label="返回结果", shape=box, fillcolor=pink];
+    
+    // 连接
+    start -> check_empty;
+    
+    check_empty -> return_empty [label="是", color=red];
+    check_empty -> collect_nodes [label="否", color=green];
+    
+    collect_nodes -> init_vars;
+    init_vars -> loop_start;
+    loop_start -> check_edges;
+    
+    check_edges -> build_result [label="否\n(无出边)", color=red];
+    check_edges -> collect_targets [label="是\n(有出边)", color=green];
+    
+    collect_targets -> select_next;
+    select_next -> check_visited;
+    
+    check_visited -> build_result [label="是\n(重复边)", color=red];
+    check_visited -> update_state [label="否\n(新边)", color=green];
+    
+    update_state -> loop_start [label="继续循环", color=blue];
+    
+    build_result -> write_file;
+    write_file -> return_result;
+    
+    return_empty -> end;
+    return_result -> end;
+    
+    // 样式
+    {rank=same; return_empty; return_result;}
+} 

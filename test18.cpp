@@ -101,25 +101,30 @@ protected:
     }
 };
 
-
-// 基本路径4：单步有出边非重复边但下一节点无出边路径
-// 路径：adjList.empty() = false → for(nodes) → while → edges.empty() = false → for(targets) → visitedEdges.count() = 0 → while → edges.empty() = true → break → for(path) → return
-TEST_F(MinimalCyclomaticTest, BasicPath4_TwoStepPath) {
+// 基本路径8：边界条件组合路径（确保所有for循环都被执行）
+// 路径：确保所有循环分支都被覆盖
+TEST_F(MinimalCyclomaticTest, BasicPath8_BoundaryConditionsCombination) {
     Graph graph;
-    graph.addEdge("start", "end");  // start有出边，end无出边
+    graph.addEdge("node1", "node2");
+    graph.addEdge("node2", "node3");
+    graph.addEdge("node3", "node1");  // 三节点环路
     
-    // 多次运行直到选中start节点
-    for (int i = 0; i < 100; ++i) {
-        std::string result = graph.randomWalk();
-        if (result.find("start") == 0) {
-            EXPECT_TRUE(isValidPath(graph, result));
-            std::ifstream file("random_walk.txt");
-            EXPECT_TRUE(file.good());
-            return;
-        }
-    }
+    std::string result = graph.randomWalk();
+    
+    EXPECT_FALSE(result.empty());
+    EXPECT_TRUE(isValidPath(graph, result));
+    
+    // 验证结果格式
+    EXPECT_TRUE(result.back() == ' ');
+    
+    std::ifstream file("random_walk.txt");
+    EXPECT_TRUE(file.good());
+    
+    // 验证文件内容与返回值一致
+    std::string fileContent;
+    std::getline(file, fileContent);
+    EXPECT_EQ(fileContent, result);
 }
-
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

@@ -1,0 +1,78 @@
+digraph RandomWalkCFG {
+    rankdir=TB;
+    node [shape=box, style=filled];
+    
+    // 节点定义
+    N1 [label="1. 函数入口\nrandomWalk()", fillcolor=lightblue];
+    N2 [label="2. 判断\nif (adjList.empty())", shape=diamond, fillcolor=orange];
+    N3 [label="3. 收集节点\nfor (auto& [node, _] : adjList)\nnodes.push_back(node)", fillcolor=lightgreen];
+    N4 [label="4. 初始化\n随机数生成器\n选择起始节点", fillcolor=lightgreen];
+    N5 [label="5. 循环入口\nwhile (true)", shape=diamond, fillcolor=purple, fontcolor=white];
+    N6 [label="6. 判断\nif (edges.empty())", shape=diamond, fillcolor=orange];
+    N7 [label="7. 收集目标\nfor (auto& [t, _] : edges)\ntargets.push_back(t)", fillcolor=lightgreen];
+    N8 [label="8. 随机选择\nnext = targets[random]", fillcolor=lightgreen];
+    N9 [label="9. 判断\nif (visitedEdges.count\n({current, next}))", shape=diamond, fillcolor=orange];
+    N10 [label="10. 更新状态\nvisitedEdges.insert\ncurrent = next\npath.push_back", fillcolor=lightgreen];
+    N11 [label="11. 退出循环\nbreak", fillcolor=yellow];
+    N12 [label="12. 构建结果\n字符串拼接\n文件输出", fillcolor=lightgreen];
+    N13 [label="13. 返回空串\nreturn \"\"", fillcolor=pink];
+    N14 [label="14. 返回结果\nreturn ss.str()", fillcolor=pink];
+    N15 [label="15. 函数出口", fillcolor=lightblue];
+    
+    // 边定义
+    N1 -> N2;
+    N2 -> N13 [label="true\n(空图)", color=red];
+    N2 -> N3 [label="false\n(非空图)", color=green];
+    N3 -> N4;
+    N4 -> N5;
+    N5 -> N6;
+    N6 -> N11 [label="true\n(无出边)", color=red];
+    N6 -> N7 [label="false\n(有出边)", color=green];
+    N7 -> N8;
+    N8 -> N9;
+    N9 -> N11 [label="true\n(重复边)", color=red];
+    N9 -> N10 [label="false\n(新边)", color=green];
+    N10 -> N5 [label="继续循环", color=blue];
+    N11 -> N12;
+    N12 -> N14;
+    N13 -> N15;
+    N14 -> N15;
+    
+    // 子图分组
+    subgraph cluster_init {
+        label="初始化阶段";
+        style=dashed;
+        color=blue;
+        N1; N2; N3; N4;
+    }
+    
+    subgraph cluster_loop {
+        label="主循环阶段";
+        style=dashed;
+        color=purple;
+        N5; N6; N7; N8; N9; N10;
+    }
+    
+    subgraph cluster_exit {
+        label="退出阶段";
+        style=dashed;
+        color=green;
+        N11; N12; N13; N14; N15;
+    }
+    
+    // 图例
+    subgraph cluster_legend {
+        label="图例";
+        style=filled;
+        fillcolor=lightyellow;
+        
+        legend_decision [label="决策节点", shape=diamond, fillcolor=orange];
+        legend_process [label="处理节点", shape=box, fillcolor=lightgreen];
+        legend_terminal [label="终端节点", shape=box, fillcolor=pink];
+        legend_loop [label="循环节点", shape=diamond, fillcolor=purple, fontcolor=white];
+        
+        legend_decision -> legend_process [style=invis];
+        legend_process -> legend_terminal [style=invis];
+        legend_terminal -> legend_loop [style=invis];
+    }
+} 

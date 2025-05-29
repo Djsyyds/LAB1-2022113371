@@ -201,10 +201,8 @@ public:
         
         // 将结果保存到文件
         ofstream outFile("random_walk.txt");
-        if (outFile.is_open()) {
-            outFile << ss.str();
-            outFile.close();
-        }
+        outFile << ss.str();
+        outFile.close();
         
         return ss.str();
     }

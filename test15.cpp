@@ -102,16 +102,19 @@ protected:
 };
 
 
-// 基本路径4：单步有出边非重复边但下一节点无出边路径
-// 路径：adjList.empty() = false → for(nodes) → while → edges.empty() = false → for(targets) → visitedEdges.count() = 0 → while → edges.empty() = true → break → for(path) → return
-TEST_F(MinimalCyclomaticTest, BasicPath4_TwoStepPath) {
+
+// 基本路径5：多步路径最终因无出边终止
+// 路径：adjList.empty() = false → for(nodes) → while → edges.empty() = false → for(targets) → visitedEdges.count() = 0 → while → ... → edges.empty() = true → break → for(path) → return
+TEST_F(MinimalCyclomaticTest, BasicPath5_MultiStepNoEdgesTermination) {
     Graph graph;
-    graph.addEdge("start", "end");  // start有出边，end无出边
+    graph.addEdge("a", "b");
+    graph.addEdge("b", "c");
+    graph.addEdge("c", "d");  // 线性链，最终d无出边
     
-    // 多次运行直到选中start节点
+    // 多次运行直到选中a节点
     for (int i = 0; i < 100; ++i) {
         std::string result = graph.randomWalk();
-        if (result.find("start") == 0) {
+        if (result.find("a") == 0) {
             EXPECT_TRUE(isValidPath(graph, result));
             std::ifstream file("random_walk.txt");
             EXPECT_TRUE(file.good());
